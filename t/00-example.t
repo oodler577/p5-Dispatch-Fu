@@ -1,24 +1,33 @@
 use strict;
 use warnings;
-use Dispatch::Fu;    # exports 'fu' and 'on'
+use Dispatch::Fu;    # exports 'dispatch' and 'on'
+use Test::More tests => 99;
 
-my $bar = [qw/1 2 3 4 5/];
-
-fu {
-    # here, give a reference $H of any kind,
-    # you compute a static string that is added
-    # via the 'on' keyword; result will be
-    # 'bucket' + some number in in 0-5
-
-    my $baz = shift;
-    return ( scalar @$baz > 5 )
-      ? q{bucket5}
-      : sprintf qq{bucket%d}, scalar @$baz;
+sub _runner {
+    my $bar   = shift;
+    my $ouput = dispatch {
+        my $baz = shift;
+        return ( scalar @$baz > 5 )
+          ? q{bucket5}
+          : sprintf qq{bucket%d}, scalar @$baz;
+    }
+    $bar,
+      on bucket0 => sub { return qq{0} },
+      on bucket1 => sub { return qq{1} },
+      on bucket2 => sub { return qq{2} },
+      on bucket3 => sub { return qq{3} },
+      on bucket4 => sub { return qq{4} },
+      on bucket5 => sub { return qq{5} };
+    return $ouput;
 }
-$bar,
-  on bucket0 => sub { print qq{bucket 0\n} },
-  on bucket1 => sub { print qq{bucket 1\n} },
-  on bucket2 => sub { print qq{bucket 2\n} },
-  on bucket3 => sub { print qq{bucket 3\n} },
-  on bucket4 => sub { print qq{bucket 4\n} },
-  on bucket5 => sub { print qq{bucket 5\n} };
+
+my @queue = ();
+foreach my $i ( 0 .. 5 ) {
+    is _runner( \@queue ), $i, q{Got expected result back from dispatch};
+    push @queue, $i;
+}
+
+foreach my $i ( 6 ... 98 ) {
+    is _runner( \@queue ), 5, q{Got expected result back from dispatch};
+    push @queue, $i;
+}

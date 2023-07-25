@@ -4,17 +4,16 @@ use warnings;
 package Dispatch::Fu;
 
 our $VERSION = q{0.8};
-
 use Exporter qw/import/;
-our @EXPORT    = qw(fu on);
-our @EXPORT_OK = qw(fu on);
+our @EXPORT    = qw(dispatch on);
+our @EXPORT_OK = qw(dispatch on);
 
-sub fu (&@) {
+sub dispatch (&@) {
     my $code_ref  = shift;
     my $match_ref = shift;
     my %dispatch  = @_;
     my $key       = $code_ref->($match_ref);
-    $dispatch{$key}->();
+    return $dispatch{$key}->();
 }
 
 sub on (@) {
@@ -28,11 +27,11 @@ sub on (@) {
 
 =head1 SYNOPSIS
 
-  use Dispatch::Fu;    # exports 'fu' and 'on'
+  use Dispatch::Fu;    # exports 'dispatch' and 'on'
   
   my $bar = [qw/1 2 3 4 5/];
   
-  fu {
+  dispatch {
       # here, give a reference $H of any kind,
       # you compute a static string that is added
       # via the 'on' keyword; result will be
@@ -58,9 +57,9 @@ sub on (@) {
 
 C<Dispatch::Fu> attempts to provide a more idomatic and succinct way to offer
 hash-based dispatching, especially when there is no natural opportunity to
-use static keys. Via the C<fu> section (implemented as a Perl prototype), a
+use static keys. Via the C<dispatch> section (implemented as a Perl prototype), a
 static key is computed using an algorithm implemented by the developer. Once
-a static key is determined and returned from C<fu>, C<Dispatch::Fu> will use
+a static key is determined and returned from C<dispatch>, C<Dispatch::Fu> will use
 the created index to immediately call the subroutine stored in that slot.
 
 It might not be wrong to consider this a generic case of I<given>/I<when> or
@@ -72,13 +71,13 @@ understand the issue well enough to say.
 
 Perl's prototype data coersions are used to facilitate this I<construct>,
 which is more accurate than claiming this module has I<methods>. The construct
-consists of two keywords, C<fu> (required exactly once), a scalar reference,
+consists of two keywords, C<dispatch> (required exactly once), a scalar reference,
 C<$baz> in the L<SYNOPSIS> above; and one or more applications of the C<on>
 keyword. 
 
 The general form is:
 
-fu BLOCK,
+dispatch BLOCK,
 REF,
 on STRING => sub BLOCK,
 on STRING => sub BLOCK,
@@ -90,14 +89,14 @@ on STRING => sub BLOCK; # last 'on' must be terminated by a semicolon
 
 =over 4
 
-=item C<fu> BLOCK
+=item C<dispatch> BLOCK
 
 BLOCK is required, and is coerced to be an anonymous subroutine that is passed
 a single scalar reference; this reference can be a single value or point to
 anything a Perl scalar reference can point to. It's the single point of entry
 for input.
 
-  fu {
+  dispatch {
     my ($ref) = @_;          # there is only one parameter, but can a reference to anything
     my $key   = q{default};  # initiate the default key to use, 'default' by convention not required
     ...                      # compute $key
@@ -110,33 +109,33 @@ using the C<on> keyword.
 
 =item C<REF>
 
-This is the scalar reference that contains all the stuff to be used in the C<fu>
+This is the scalar reference that contains all the stuff to be used in the C<dispatch>
 BLOCK. In the example above it is, C<$bar>.
 
   my $_ref = [qw/foo bar baz 1 3 4 5/];
-  fu {
+  dispatch {
     my ($ref) = @_;          # there is only one parameter, but can a reference to anything
     my $key   = q{default};  # initiate the default key to use, 'default' by convention not required
     ...                      # compute $key
     return $key;             # key must be limited to the set of keys added with C<on>
   },
-  $_ref,                     # <~ the single scalar reference to be passed to the C<fu> BLOCK
+  $_ref,                     # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
   ...
 
 =item C<on>
 
 This keyword builds up the dispatch table. It consists of a static string and
-a subroutine reference. In order for this to work for you, the C<fu> BLOCK must
+a subroutine reference. In order for this to work for you, the C<dispatch> BLOCK must
 return strictly only the keys that are defined via C<on>.
 
   my $_ref = [qw/foo bar baz 1 3 4 5/];
-  fu {
+  dispatch {
     my ($ref) = @_;          # there is only one parameter, but can a reference to anything
     my $key   = q{default};  # initiate the default key to use, 'default' by convention not required
     ...                      # compute $key
     return $key;             # key must be limited to the set of keys added with C<on>
   },
-  $_ref,                     # <~ the single scalar reference to be passed to the C<fu> BLOCK
+  $_ref,                     # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
   on q{default} => sub {...},
   on q{key}     => sub {...},
   on q{key}     => sub {...},
