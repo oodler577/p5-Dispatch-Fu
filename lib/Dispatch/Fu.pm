@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION   = q{0.93};
+our $VERSION   = q{0.94};
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
 
@@ -52,9 +52,9 @@ Dispatch::Fu - Provides a reduction based approach to given/when or variable dis
   use warnings;
   use Dispatch::Fu;    # exports 'dispatch' and 'on', which are needed
   
-  my $input_ref = [qw/1 2 3 4 5/];
+  my $INPUT_REF = [qw/1 2 3 4 5/];
   
-  my $bucket = dispatch {
+  my $results = dispatch {
       my $_input_ref = shift;                        # <~ input reference
 
       return ( scalar @$_input_ref > 5 )             # <~ return a string that must be
@@ -184,12 +184,12 @@ a single scalar reference; this reference can be a single value or point to
 anything a Perl scalar reference can point to. It's the single point of entry
 for input.
 
-  my $return_val   = dispatch {
+  my $results = dispatch {
   
-    my $_input_ref = shift @_;# there is only one parameter, but can a reference to anything
-    my $key    = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                       # compute $key
-    return $key;              # key must be limited to the set of keys added with C<on>
+    my $_input_ref = shift;  # there is only one parameter, but can a reference to anything
+    my $key    = q{default}; # initiate the default key to use, 'default' by convention not required
+    ...                      # compute $key
+    return $key;             # key must be limited to the set of keys added with C<on>
   
   },
   ...
@@ -205,15 +205,15 @@ the way to pass arbitrary data into C<dispatch>. E.g.,
 
   my $INPUT_REF  = [qw/foo bar baz 1 3 4 5/];
   
-  my $return_val = dispatch {
+  my $result = dispatch {
 
-    my $_input_ref = shift @_;# there is only one parameter, but can a reference to anything
-    my $key    = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                       # compute $key
-    return $key;              # key must be limited to the set of keys added with C<on>
+    my $_input_ref = shift;  # there is only one parameter, but can a reference to anything
+    my $key    = q{default}; # initiate the default key to use, 'default' by convention not required
+    ...                      # compute $key
+    return $key;             # key must be limited to the set of keys added with C<on>
   
   },
-  $INPUT_REF,                 # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  $INPUT_REF,                # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
   ...
 
 =item C<on>
@@ -224,21 +224,21 @@ BLOCK must return strictly only the keys that are defined via C<on>.
 
   my $INPUT_REF = [qw/foo bar baz 1 3 4 5/];
     
-  my $return_val = dispatch {
+  my $results = dispatch {
   
-    my ($ref)    = @_;          # there is only one parameter, but can a reference to anything
-    my $key      = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                         # compute $key
-    return $key;                # key must be limited to the set of keys added with C<on>
+    my $_input_ref = shift;      # there is only one parameter, but can a reference to anything
+    my $key        = q{default}; # initiate the default key to use, 'default' by convention not required
+    ...                          # compute $key
+    return $key;                 # key must be limited to the set of keys added with C<on>
   
   },
-  $INPUT_REF,                   # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  $INPUT_REF,                    # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{key1}    => sub {...},
    on q{key2}    => sub {...},
    on q{key3}    => sub {...},
    on q{key4}    => sub {...},
    on q{key5}    => sub {...},
-   on q{default} => sub {...};  # 'default' (by convention, not enforced); not semi-colon needed to end structure 
+   on q{default} => sub {...};   # 'default' (by convention, not enforced); not semi-colon needed to end structure 
 
 Note: It was made as a design decision that there be no way to specify the
 input parameters into the subroutine reference that is added by each C<on>
@@ -250,15 +250,15 @@ deal with it. E.g.,
 
   my $INPUT_REF = [qw/foo bar baz 1 3 4 5/];
    
-  my $return_val = dispatch {
+  my $results = dispatch {
   
-    my ($ref)    = @_;          # there is only one parameter, but can a reference to anything
-    my $key      = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                         # compute $key
-    return $key;                # key must be limited to the set of keys added with C<on>
+    my $_input_ref = shift;      # there is only one parameter, but can a reference to anything
+    my $key        = q{default}; # initiate the default key to use, 'default' by convention not required
+    ...                          # compute $key
+    return $key;                 # key must be limited to the set of keys added with C<on>
   
   },
-  $INPUT_REF,                   # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  $INPUT_REF,                    # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{default}  => sub { do_default($input_ref) },
    on q{key1}     => sub { do_key1(input => $input_ref) },
    on q{key2}     => sub { do_key2(qw/some other inputs entirely/) };
