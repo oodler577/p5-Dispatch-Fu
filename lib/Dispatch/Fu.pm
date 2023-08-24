@@ -1,10 +1,10 @@
-use strict;
-use warnings;
-
 package Dispatch::Fu;
 
-our $VERSION = q{0.10};
+use strict;
+use warnings;
 use Exporter qw/import/;
+
+our $VERSION   = q{0.11};
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
 
@@ -71,45 +71,48 @@ Dispatch::Fu - Provides a reduction based approach to given/when or variable dis
 
 =head1 DESCRIPTION
 
-C<Dispatch::Fu> provide an idomatic and succinct way to organize a C<HASH>-based
+C<Dispatch::Fu> provides an idomatic and succinct way to organize a C<HASH>-based
 dispatch table.
 
 =head2 The Problem 
 
-This can be done easily when dispatch may occur on a single variable that
-may be one or more static strings that are suitable to serve also as C<HASH>
-keys. For example,
+A dispatch table can be fashioned easily when the dispatch may occur on a single
+variable that may be one or more static strings suitable to serve also as C<HASH>
+a key.
+
+For example, the following is more or less a classical expampe of this approach:
 
   my $action = get_action();
   
   my $dispatch = {
     do_dis     => sub { ... },
-    do_dat     => sub { ... }.
-    do_dese    => sub { ... },
-    do_dose    => sub { ... },
-    do_default => sub { ... },
+    do_dat     => sub { ... },
+    do_deez    => sub { ... },
+    do_doze    => sub { ... },
   }; 
    
   if ($action or not exists $dispatch->{$action}) {
-    $action = q{do_default};
+    die qq{action not supported\n};
   }
 
   my $results = $dispatch->{$action}->();
 
 But this nice situation breaks down if C<$action> is a value that is
-not suitable as as a C<HASH> key, is a range of values, or a single
-variable C<$action> is not sufficient to determine what action to
-dispatch. C<Dispatch::Fu> solves this problem.
+not suitable for us as a C<HASH> key, is a range of values, or a single
+variable (e.g., C<$action>) is not sufficient to determine what action
+to dispatch. C<Dispatch::Fu> solves this problem by providing a stage
+where a static key might be computed or classied.
 
 =head2 The Solution 
 
-C<Dispatch::Fu> solves this problem buy providing a I<Perlish> and I<idiomatic>
-structure for computing a static key from an arbitrarily defined algorithm
-written by the developer using this module. This static key that is computed
-is then used to do to dispatch the anonyous subroutine explicitly defined
-but that key.
+C<Dispatch::Fu> solves the problem by providing a I<Perlish> and I<idiomatic>
+hook for computing a static key from an arbitrarily defined algorithm
+written by the developer using this module.
 
-The simple ideal case can be mostly replicated below:
+The static key that is computed is then used to do to dispatch the anonyous
+subroutine explicitly defined but that key.
+
+The simple case above can be mostly replicated below:
 
   my $results = dispatch {
     my $_action = shift;
@@ -118,13 +121,37 @@ The simple ideal case can be mostly replicated below:
   $action,
    on do_dis     => sub { ... },
    on do_dat     => sub { ... },
-   on do_dese    => sub { ... }.
-   on do_dose    => sub { ... };
+   on do_deez    => sub { ... },
+   on do_doze    => sub { ... }; # semi-colon
   
 The one difference here is, if C<$action> is defined but not accounted
 for using the C<on> keyword, then C<dispatch> will throw an exception via
 C<die>. Certainly any logic meant to deal with the value (or lack thereof)
 of C<$action> should be handled in the C<dispatch> BLOCK.
+
+Similarly, a more complicate case might be defined:
+
+  my $results = dispatch {
+    my $array_ref = shift;
+    my $rand      = $array_ref->[0];
+    if ( $rand < 2.5 ) {
+        return q{do_dis};
+    }
+    elsif ( $rand >= 2.5 and $rand < 5.0 ) {
+        return q{do_dat};
+    }
+    elsif ( $rand >= 5.0 and $rand < 7.5 ) {
+        return q{do_deez};
+    }
+    elsif ( $rand >= 7.5 ) {
+        return q{do_doze};
+    }
+  },
+  [ rand 10 ],
+   on do_dis    => sub { ... },
+   on do_dat    => sub { ... },
+   on do_deez   => sub { ... },
+   on do_doze   => sub { ... }; # semi-colon
 
 =head1 USAGE
 
