@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION   = q{0.11};
+our $VERSION   = q{0.91};
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
 
