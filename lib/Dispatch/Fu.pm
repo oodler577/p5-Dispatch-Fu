@@ -3,7 +3,7 @@ use warnings;
 
 package Dispatch::Fu;
 
-our $VERSION = q{0.9};
+our $VERSION = q{0.10};
 use Exporter qw/import/;
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
@@ -42,10 +42,9 @@ sub _to_sub (&) {
 
 __END__
 
-# ABSTRACT: Provides a reduction based approach to given/when or variable dispatch
-
 =head1 NAME
-  Dispatch::Fu - Provides a reduction based approach to given/when or variable dispatch 
+
+Dispatch::Fu - Provides a reduction based approach to given/when or variable dispatch 
 
 =head1 SYNOPSIS
 
