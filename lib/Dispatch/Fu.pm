@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION   = q{0.92};
+our $VERSION   = q{0.93};
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
 
@@ -184,11 +184,13 @@ a single scalar reference; this reference can be a single value or point to
 anything a Perl scalar reference can point to. It's the single point of entry
 for input.
 
-  dispatch {
-    my ($ref) = @_;          # there is only one parameter, but can a reference to anything
-    my $key   = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                      # compute $key
-    return $key;             # key must be limited to the set of keys added with C<on>
+  my $return_val   = dispatch {
+  
+    my $_input_ref = shift @_;# there is only one parameter, but can a reference to anything
+    my $key    = q{default};  # initiate the default key to use, 'default' by convention not required
+    ...                       # compute $key
+    return $key;              # key must be limited to the set of keys added with C<on>
+  
   },
   ...
 
@@ -201,14 +203,17 @@ This is the singular scalar reference that contains all the stuff to be used
 in the C<dispatch> BLOCK. In the example above it is, C<[rand 10]>. It is
 the way to pass arbitrary data into C<dispatch>. E.g.,
 
-  my $_ref = [qw/foo bar baz 1 3 4 5/];
-  dispatch {
-    my ($ref) = @_;          # there is only one parameter, but can a reference to anything
-    my $key   = q{default};  # initiate the default key to use, 'default' by convention not required
-    ...                      # compute $key
-    return $key;             # key must be limited to the set of keys added with C<on>
+  my $INPUT_REF  = [qw/foo bar baz 1 3 4 5/];
+  
+  my $return_val = dispatch {
+
+    my $_input_ref = shift @_;# there is only one parameter, but can a reference to anything
+    my $key    = q{default};  # initiate the default key to use, 'default' by convention not required
+    ...                       # compute $key
+    return $key;              # key must be limited to the set of keys added with C<on>
+  
   },
-  $_ref,                     # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  $INPUT_REF,                 # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
   ...
 
 =item C<on>
@@ -217,21 +222,23 @@ This keyword builds up the dispatch table. It consists of a static string and
 a subroutine reference. In order for this to work for you, the C<dispatch>
 BLOCK must return strictly only the keys that are defined via C<on>.
 
-  my $input_ref = [qw/foo bar baz 1 3 4 5/];
+  my $INPUT_REF = [qw/foo bar baz 1 3 4 5/];
     
-  dispatch {
+  my $return_val = dispatch {
+  
     my ($ref)    = @_;          # there is only one parameter, but can a reference to anything
     my $key      = q{default};  # initiate the default key to use, 'default' by convention not required
     ...                         # compute $key
     return $key;                # key must be limited to the set of keys added with C<on>
+  
   },
-  $_input_ref,                  # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
-   on q{default} => sub {...},
+  $INPUT_REF,                   # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{key1}    => sub {...},
    on q{key2}    => sub {...},
    on q{key3}    => sub {...},
    on q{key4}    => sub {...},
-   on q{key5}    => sub {...};  # <~ last line of the construct must end with a semicolon, like all Perl statements
+   on q{key5}    => sub {...},
+   on q{default} => sub {...};  # 'default' (by convention, not enforced); not semi-colon needed to end structure 
 
 Note: It was made as a design decision that there be no way to specify the
 input parameters into the subroutine reference that is added by each C<on>
@@ -241,15 +248,17 @@ one to manage what happens in each C<on> case more explicitly. Perl's scoping
 rules lets one use variables in a higher scope, so that would be the way to
 deal with it. E.g.,
 
-  my $input_ref  = [qw/foo bar baz 1 3 4 5/];
+  my $INPUT_REF = [qw/foo bar baz 1 3 4 5/];
    
-  dispatch {
-    my ($ref)    = @_;
-    my $key      = q{default};
-    ...
-    return $key;
+  my $return_val = dispatch {
+  
+    my ($ref)    = @_;          # there is only one parameter, but can a reference to anything
+    my $key      = q{default};  # initiate the default key to use, 'default' by convention not required
+    ...                         # compute $key
+    return $key;                # key must be limited to the set of keys added with C<on>
+  
   },
-  $_input_ref,
+  $INPUT_REF,                   # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{default}  => sub { do_default($input_ref) },
    on q{key1}     => sub { do_key1(input => $input_ref) },
    on q{key2}     => sub { do_key2(qw/some other inputs entirely/) };

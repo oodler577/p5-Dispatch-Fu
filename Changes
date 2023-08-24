@@ -23,3 +23,7 @@ Revision history for Dispatch::Fu.
 0.92 Wed Aug 23 15:05:09 2023
      - fixing version number for proper CPAN indexing
      - no functional changes
+
+0.93 Wed Aug 23 16:05:09 2023
+     - POD updates
+     - no functional changes
