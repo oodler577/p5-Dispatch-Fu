@@ -80,7 +80,7 @@ A dispatch table can be fashioned easily when the dispatch may occur on a single
 variable that may be one or more static strings suitable to serve also as C<HASH>
 a key.
 
-For example, the following is more or less a classical expampe of this approach:
+For example, the following is more or less a classical example of this approach:
 
   my $action = get_action();
   
