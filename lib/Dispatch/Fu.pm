@@ -3,7 +3,7 @@ use warnings;
 
 package Dispatch::Fu;
 
-our $VERSION = q{0.8};
+our $VERSION = q{0.9};
 use Exporter qw/import/;
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
@@ -42,79 +42,103 @@ sub _to_sub (&) {
 
 __END__
 
-# ABSTRACT: provides a reduction based approach to given/when or variable dispatch
+# ABSTRACT: Provides a reduction based approach to given/when or variable dispatch
 
 =head1 NAME
-  Dispatch::Fu - hash based dispatch with dynamic key computations
+  Dispatch::Fu - Provides a reduction based approach to given/when or variable dispatch 
 
 =head1 SYNOPSIS
 
+  use strict;
+  use warnings;
   use Dispatch::Fu;    # exports 'dispatch' and 'on', which are needed
   
   my $input_ref = [qw/1 2 3 4 5/];
   
   my $bucket = dispatch {
-      # here, give a reference $H of any kind,
-      # you compute a static string that is added
-      # via the 'on' keyword; result will be
-      # 'bucket' + some number in in 0-5
-  
-      my $baz = shift;
+      my $_input_ref = shift;                        # <~ input reference
 
-      # what gets returned here should be a static string
-      # that is used as a key in the "on" entries below.
-      return ( scalar @$baz > 5 )
-        ? q{bucket5}
-        : sprintf qq{bucket%d}, scalar @$baz;
+      return ( scalar @$_input_ref > 5 )             # <~ return a string that must be
+        ? q{bucket5}                                 #    defined below using the 'on'
+        : sprintf qq{bucket%d}, scalar @$_input_ref; #    keyword, this i
   }
-  $input_ref,
-    on bucket0 => sub { print qq{bucket 0\n}; 0 },
-    on bucket1 => sub { print qq{bucket 1\n}; 1 },
-    on bucket2 => sub { print qq{bucket 2\n}; 2 },
-    on bucket3 => sub { print qq{bucket 3\n}; 3 },
-    on bucket4 => sub { print qq{bucket 4\n}; 4 },
-    on bucket5 => sub { print qq{bucket 5\n}; 5 };
+  $input_ref,                                        # <~ input reference, SCALAR passed to dispatch BLOCK 
+    on bucket0 => sub { print qq{bucket 0\n}; 0 },   # <~ if dispatch returns 'bucket0', run this CODE
+    on bucket1 => sub { print qq{bucket 1\n}; 1 },   # <~ if dispatch returns 'bucket1', run this CODE
+    on bucket2 => sub { print qq{bucket 2\n}; 2 },   # ...
+    on bucket3 => sub { print qq{bucket 3\n}; 3 },   # ...   ...   ...   ... 
+    on bucket4 => sub { print qq{bucket 4\n}; 4 },   # ...
+    on bucket5 => sub { print qq{bucket 5\n}; 5 };   # <~ if dispatch returns 'bucket5', run this CODE
 
 =head1 DESCRIPTION
 
-C<Dispatch::Fu>  provide an idomatic and succinct way to offer hash-based
-dispatching, especially when there is no natural opportunity to use static
-keys. In the right hands, it is hoped this construct will do good things for
-good people. It'll also do bad things for bad people. C<Dispatch::Fu> is
-just a created thing.
+C<Dispatch::Fu> provide an idomatic and succinct way to organize a C<HASH>-based
+dispatch table.
 
-Via the C<dispatch> section (implemented as a Perl prototype), a static key
-is computed using an algorithm implemented by the developer. Once a static
-key is determined and returned from C<dispatch>, C<Dispatch::Fu> will use
-the created index to immediately call the subroutine stored in that slot.
+=head2 The Problem 
 
-It might not be wrong to consider this a generic case of I<given>/I<when>
-or I<match>/I<case> that is bantied about from time to time. It might even
-suffice as a form of I<smart match>, but the author of this module doesn't
-understand the issue well enough to say.
+This can be done easily when dispatch may occur on a single variable that
+may be one or more static strings that are suitable to serve also as C<HASH>
+keys. For example,
+
+  my $action = get_action();
+  
+  my $dispatch = {
+    do_dis     => sub { ... },
+    do_dat     => sub { ... }.
+    do_dese    => sub { ... },
+    do_dose    => sub { ... },
+    do_default => sub { ... },
+  }; 
+   
+  if ($action or not exists $dispatch->{$action}) {
+    $action = q{do_default};
+  }
+
+  my $results = $dispatch->{$action}->();
+
+But this nice situation breaks down if C<$action> is a value that is
+not suitable as as a C<HASH> key, is a range of values, or a single
+variable C<$action> is not sufficient to determine what action to
+dispatch. C<Dispatch::Fu> solves this problem.
+
+=head2 The Solution 
+
+C<Dispatch::Fu> solves this problem buy providing a I<Perlish> and I<idiomatic>
+structure for computing a static key from an arbitrarily defined algorithm
+written by the developer using this module. This static key that is computed
+is then used to do to dispatch the anonyous subroutine explicitly defined
+but that key.
+
+The simple ideal case can be mostly replicated below:
+
+  my $results = dispatch {
+    my $_action = shift;
+    return $_action;
+  },
+  $action,
+   on do_dis     => sub { ... },
+   on do_dat     => sub { ... },
+   on do_dese    => sub { ... }.
+   on do_dose    => sub { ... };
+  
+The one difference here is, if C<$action> is defined but not accounted
+for using the C<on> keyword, then C<dispatch> will throw an exception via
+C<die>. Certainly any logic meant to deal with the value (or lack thereof)
+of C<$action> should be handled in the C<dispatch> BLOCK.
 
 =head1 USAGE
 
-Perl's prototype data coersions are used to facilitate this I<construct>,
-which is more accurate than claiming this module has I<methods>. The construct
-consists of two keywords, C<dispatch> (required exactly once), a scalar
-reference, C<$baz> in the L<SYNOPSIS> above; and one or more applications
-of the C<on> keyword.
+The developer using this module defines how to boil down the provided
+C<REF> into a single, static string. It can be described as a I<reduction>
+operation or, maybe even a I<classification>. The author tends to use the
+term I<buckets>, because the C<dispatch> function decides what I<bucket>
+(or case) the provided set of input falls into. It's best to play with the
+module rather than try to really understand it from this description.
 
-The C<dispatch> keyword will return the results of the block that is executed
-based on the computed STRING.
-
-The general form is:
-
-SCALAR = dispatch BLOCK,
-REF,
- on STRING1 => sub BLOCK1,
- on STRING2 => sub BLOCK2,
- on STRING3 => sub BLOCK3,
- on STRING4 => sub BLOCK4,
- on STRING5 => sub BLOCK5,
-...
- on STRINGn => sub BLOCKn; # last 'on' must be terminated by a semicolon
+For more working examples, look at the tests in the C<./t> directory. It
+should quickly become apparent how to use this method and what it's for by
+trying it out.
 
 =over 4
 
@@ -133,13 +157,13 @@ for input.
   },
   ...
 
-It must return a static string, and that string should be one of the keys added
-using the C<on> keyword.
+It must return a static string, and that string should be one of the keys
+added using the C<on> keyword.
 
 =item C<REF>
 
-This is the scalar reference that contains all the stuff to be used in the C<dispatch>
-BLOCK. In the example above it is, C<$bar>.
+This is the scalar reference that contains all the stuff to be used in the
+C<dispatch> BLOCK. In the example above it is, C<$bar>.
 
   my $_ref = [qw/foo bar baz 1 3 4 5/];
   dispatch {
@@ -154,8 +178,8 @@ BLOCK. In the example above it is, C<$bar>.
 =item C<on>
 
 This keyword builds up the dispatch table. It consists of a static string and
-a subroutine reference. In order for this to work for you, the C<dispatch> BLOCK must
-return strictly only the keys that are defined via C<on>.
+a subroutine reference. In order for this to work for you, the C<dispatch>
+BLOCK must return strictly only the keys that are defined via C<on>.
 
   my $input_ref = [qw/foo bar baz 1 3 4 5/];
   
@@ -173,10 +197,11 @@ return strictly only the keys that are defined via C<on>.
    on q{key4}    => sub {...},
    on q{key5}    => sub {...};  # <~ last line of the construct must end with a semicolon, like all Perl statements
 
-Note: Currently, there is no way to specific the input parameters into the subroutine
-reference that is added by each C<on> statement. This means that the subroutine refs
-are to be treated as wrappers that access the current scope. This provides maximum
-flexibility and allows one to manage what happens in each C<on> case more explicitly.
+Note: Currently, there is no way to specific the input parameters into the
+subroutine reference that is added by each C<on> statement. This means that
+the subroutine refs are to be treated as wrappers that access the current
+scope. This provides maximum flexibility and allows one to manage what
+happens in each C<on> case more explicitly.
 
 For example,
 
