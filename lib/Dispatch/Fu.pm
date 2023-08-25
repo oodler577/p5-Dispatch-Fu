@@ -89,7 +89,7 @@ For example, the following is more or less a classical example of this approach
 that is fundamentally based on a 1:1 mapping of a value of C<$action> to a
 C<HASH> key defined in C<$dispatch>:
 
-  my $case = get_case(); # presumed to return one of the hash keys used below
+  my $CASE = get_case(); # presumed to return one of the hash keys used below
    
   my $dispatch = {
     do_dis  => sub { ... },
@@ -98,15 +98,15 @@ C<HASH> key defined in C<$dispatch>:
     do_doze => sub { ... },
   }; 
    
-  if (not $case or not exists $dispatch->{$case}) {
+  if (not $CASE or not exists $dispatch->{$CASE}) {
     die qq{case not supported\n};
   }
   
-  my $results = $dispatch->{$case}->();
+  my $results = $dispatch->{$CASE}->();
 
-But this nice situation breaks down if C<$case> is a value that is not suitable
+But this nice situation breaks down if C<$CASE> is a value that is not suitable
 for us as a C<HASH> key, is a range of values, or a single variable (e.g.,
-C<$case>) is not sufficient to determine what case to dispatch. C<Dispatch::Fu>
+C<$CASE>) is not sufficient to determine what case to dispatch. C<Dispatch::Fu>
 solves this problem by providing a stage where a static key might be computed
 or classified.
 
@@ -250,13 +250,13 @@ deal with it. E.g.,
    
   my $results = dispatch {
   
-    my $cases_ref = shift;      # there is only one parameter, but can a reference to anything
+    my $cases_ref = shift;       # there is only one parameter, but can a reference to anything
     my $key        = q{default}; # initiate the default key to use, 'default' by convention not required
     ...                          # compute $key
     return $key;                 # key must be limited to the set of keys added with C<on>
   
   },
-  $CASES,                    # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  $CASES,                        # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{default}  => sub { return do_default($CASES)                      },
    on q{key1}     => sub { return do_key1(cases => $CASES)                },
    on q{key2}     => sub { return do_key2(qw/some other inputs entirely/) };
