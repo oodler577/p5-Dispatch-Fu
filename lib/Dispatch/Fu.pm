@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION   = q{0.95};
+our $VERSION   = q{0.96};
 our @EXPORT    = qw(dispatch on);
 our @EXPORT_OK = qw(dispatch on);
 
@@ -59,7 +59,7 @@ Dispatch::Fu - Converts any complicated conditional dispatch situation into fami
       return ( scalar @$cases_ref > 5 )          # <~ return a string that must be
        ? q{case5}                                #    defined below using the 'on'
        : sprintf qq{case%d}, scalar @$cases_ref; #    keyword, this i
-  $CASES,                                        # <~ input reference, SCALAR passed to dispatch BLOCK 
+  } $CASES,                                      # <~ input reference, SCALAR passed to dispatch BLOCK 
     on case0 => sub { print qq{case 0\n}; 0},    # <~ if dispatch returns 'case0', run this CODE
     on case1 => sub { print qq{case 1\n}; 1} ,   # <~ if dispatch returns 'case1', run this CODE
     on case2 => sub { print qq{case 2\n}; 2},    #    ...   ...   ...   ...   ...   ...   ...
@@ -211,8 +211,7 @@ the way to pass arbitrary data into C<dispatch>. E.g.,
     ...                    # <~ compute $key (yada yada)
     return $key;           # <~ key must be limited to the set of keys added with C<on>
 
-  },
-  $CASES, ### <><~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  } $CASES,                ### <><~ the single scalar reference to be passed to the C<dispatch> BLOCK
   ...
 
 =item C<on>
@@ -230,8 +229,7 @@ BLOCK must return strictly only the keys that are defined via C<on>.
     ...                    # <~ compute $key (yada yada)
     return $key;           # <~ key must be limited to the set of keys added with C<on>
   
-  },
-  $CASES, ### <><~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  } $CASES,                ### <><~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on case1 => sub { ... },
    on case2 => sub { ... },
    on case3 => sub { ... },
@@ -255,8 +253,7 @@ deal with it. E.g.,
     ...                          # compute $key
     return $key;                 # key must be limited to the set of keys added with C<on>
   
-  },
-  $CASES,                        # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
+  } $CASES,                      # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
    on q{default}  => sub { return do_default($CASES)                      },
    on q{key1}     => sub { return do_key1(cases => $CASES)                },
    on q{key2}     => sub { return do_key2(qw/some other inputs entirely/) };
