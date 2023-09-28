@@ -4,15 +4,11 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION       = q{0.97};
-our @EXPORT        = qw(dispatch on cases);
-our @EXPORT_OK     = qw(dispatch on cases);
+our $VERSION       = q{0.98};
+our @EXPORT        = qw(dispatch on cases xdefault);
+our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
 my $DISPATCH_TABLE = {};
-
-sub cases () {
-    return keys %$DISPATCH_TABLE;
-}
 
 sub dispatch (&@) {
     my $code_ref  = shift;    # catch sub ref that was coerced from the 'dispatch' BLOCK
@@ -35,12 +31,30 @@ sub dispatch (&@) {
     # reset table
     $DISPATCH_TABLE = {};
 
-    $sub_to_call->();
+    # dispatch with $match_ref
+    $sub_to_call->($match_ref);
 }
 
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
     return @_;
+}
+
+# sub for introspection, returns the string names of each case
+# added using the C<on> keyword
+sub cases () {
+    return keys %$DISPATCH_TABLE;
+}
+
+# if $case is in cases(), return $case; otherwise return $default
+# Note: $default defaults to q{default}; i.e., if the name of the
+# default case is not specified, the string 'default' is returned
+sub xdefault($;$) {
+  my ($case, $default) = @_;
+  if (grep { /$case/ } (cases)){
+    return $case;
+  }
+  return $default // q{default};
 }
 
 # utility sub to force a BLOCK into a sub reference
@@ -60,7 +74,7 @@ Dispatch::Fu - Converts any complicated conditional dispatch situation into fami
 
   use strict;
   use warnings;
-  use Dispatch::Fu qw/dispatch on/; # exported by default, just for show here
+  use Dispatch::Fu; # 'dispatch', 'cases', 'xdefault', and 'on' are exported by default, just for show here
 
   my $INPUT = [qw/1 2 3 4 5/];
 
@@ -70,12 +84,12 @@ Dispatch::Fu - Converts any complicated conditional dispatch situation into fami
        ? q{case5}                                #    defined below using the 'on'
        : sprintf qq{case%d}, scalar @$input_ref; #    keyword, this i
   } $INPUT,                                      # <~ input reference, SCALAR passed to dispatch BLOCK
-    on case0 => sub { print qq{case 0\n}; 0},    # <~ if dispatch returns 'case0', run this CODE
-    on case1 => sub { print qq{case 1\n}; 1} ,   # <~ if dispatch returns 'case1', run this CODE
-    on case2 => sub { print qq{case 2\n}; 2},    #    ...   ...   ...   ...   ...   ...   ...
-    on case3 => sub { print qq{case 3\n}; 3},    # ...   ...   ...   ...   ...   ...   ...   ...
-    on case4 => sub { print qq{case 4\n}; 4},    #    ...   ...   ...   ...   ...   ...   ...
-    on case5 => sub { print qq{case 5\n}; 5};    # <~ if dispatch returns 'case5', run this CODE
+    on case0 => sub { my $INPUT = shift; return qq{case 0}},    # <~ if dispatch returns 'case0', run this CODE
+    on case1 => sub { my $INPUT = shift; return qq{case 1}} ,   # <~ if dispatch returns 'case1', run this CODE
+    on case2 => sub { my $INPUT = shift; return qq{case 2}},    #    ...   ...   ...   ...   ...   ...   ...
+    on case3 => sub { my $INPUT = shift; return qq{case 3}},    # ...   ...   ...   ...   ...   ...   ...   ...
+    on case4 => sub { my $INPUT = shift; return qq{case 4}},    #    ...   ...   ...   ...   ...   ...   ...
+    on case5 => sub { my $INPUT = shift; return qq{case 5}};    # <~ if dispatch returns 'case5', run this CODE
 
 =head1 DESCRIPTION
 
@@ -229,6 +243,50 @@ Given the full example above,
    on do_deez => sub { ... },
    on do_doze => sub { ... };
 
+=item C<xdefault> STRING, [DEFAULT_STRING]
+
+Provides a shortcut for the common situation where one static value really
+define the case key. Used idiomatically without the explicit return provided
+it is as the very last line of the C<dispatch> BLOCK.
+
+  my $results = dispatch {
+    my $input_str = shift;
+    xdefault $input_str, q{do_default}; # if $input_str is not in supported cases, return the string 'default'
+  },
+  $somestring,
+   on do_default => sub { ... },        #<~ default case
+   on do_dis     => sub { ... },
+   on do_dat     => sub { ... },
+   on do_deez    => sub { ... },
+   on do_doze    => sub { ... };
+
+C<xdefault> can be passed just the string that is checked for membership in C<cases>,
+if just provided the I<default> case key, the string C<default> will be used if the
+string being tested is not in the set of cases defined using C<on>.
+
+  my $results = dispatch {
+    my $input_str = shift;
+    xdefault $input_str;      # if $input_str is not in the set of supported cases, it will return the string 'default'
+  },
+  $somestring,
+   on default => sub { ... }, #<~ default case
+   on do_dis  => sub { ... },
+   on do_dat  => sub { ... },
+   on do_deez => sub { ... },
+   on do_doze => sub { ... };
+
+And just for the sake of minimization, we can get rid of one more line here:
+
+  my $results = dispatch {
+    xdefault shift;           # if $input_str is not in supported cases, return the string 'default'
+  },
+  $somestring,
+   on default => sub { ... }, #<~ default case
+   on do_dis  => sub { ... },
+   on do_dat  => sub { ... },
+   on do_deez => sub { ... },
+   on do_doze => sub { ... };
+
 =item C<REF>
 
 This is the singular scalar reference that contains all the stuff to be used
@@ -238,7 +296,6 @@ the way to pass arbitrary data into C<dispatch>. E.g.,
   my $INPUT  = [qw/foo bar baz 1 3 4 5/];
 
   my $result = dispatch {
-
     my $input_ref = shift; # <~ there is only one parameter, but can a reference to anything
     my $key = q{default};  # <~ initiate the default key to use, 'default' by convention not required
     ...                    # <~ compute $key (yada yada)
@@ -263,33 +320,37 @@ BLOCK must return strictly only the keys that are defined via C<on>.
     return $key;           # <~ key must be limited to the set of keys added with C<on>
 
   } $INPUT,                ### <><~ the single scalar reference to be passed to the C<dispatch> BLOCK
-   on case1 => sub { ... },
-   on case2 => sub { ... },
-   on case3 => sub { ... },
-   on case4 => sub { ... },
-   on case5 => sub { ... };
+   on case1 => sub { my $INPUT = shift; ... },
+   on case2 => sub { my $INPUT = shift; ... },
+   on case3 => sub { my $INPUT = shift; ... },
+   on case4 => sub { my $INPUT = shift; ... },
+   on case5 => sub { my $INPUT = shift; ... };
 
-Note: It was made as a design decision that there be no way to specify the
-input parameters into the subroutine reference that is added by each C<on>
-statement. This means that the subroutine refs are to be treated as wrappers
-that access the current scope. This provides maximum flexibility and allows
-one to manage what happens in each C<on> case more explicitly. Perl's scoping
-rules lets one use variables in a higher scope, so that would be the way to
-deal with it. E.g.,
+Note: when the subroutine associated with each I<case> is dispatched, the C<$INPUT> scalar is provide
+as input.
 
   my $INPUT = [qw/foo bar baz 1 3 4 5/];
 
   my $results = dispatch {
 
     my $input_ref = shift;      # there is only one parameter, but can a reference to anything
-    my $key       = q{default}; # initiate the default key to use, 'default' by convention not required
+    my $key    = q{default};    # initiate the default key to use, 'default' by convention not required
     ...                         # compute $key
     return $key;                # key must be limited to the set of keys added with C<on>
 
   } $INPUT,                     # <~ the single scalar reference to be passed to the C<dispatch> BLOCK
-   on q{default}  => sub { do_default($INPUT)                      },
-   on q{key1}     => sub { do_key1(cases => $INPUT)                },
-   on q{key2}     => sub { do_key2(qw/some other inputs entirely/) };
+   on default  => sub {
+     my $INPUT = shift;
+     do_default($INPUT);
+   },
+   on key1     => sub {
+     my $INPUT = shift;
+     do_key1(cases => $INPUT);
+   },
+   on key2     => sub { 
+     my $INPUT = shift;
+     do_key2(qw/some other inputs entirely/);
+   };
 
 =back
 
