@@ -55,3 +55,6 @@ Revision history for Dispatch::Fu.
        use straight HASH ref dispatching for; see the
        tests and POD examples
 
+0.99 Sat Sep 30 20:05:09 2023
+     - fixed xdefault to allow for the first parameter to
+       to be C<undef>

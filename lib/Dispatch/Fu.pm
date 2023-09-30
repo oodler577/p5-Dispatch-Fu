@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION       = q{0.98};
+our $VERSION       = q{0.99};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
@@ -51,7 +51,7 @@ sub cases () {
 # default case is not specified, the string 'default' is returned
 sub xdefault($;$) {
   my ($case, $default) = @_;
-  if (grep { /$case/ } (cases)){
+  if ($case and grep { /$case/ } (cases)){
     return $case;
   }
   return $default // q{default};
@@ -243,7 +243,9 @@ Given the full example above,
    on do_deez => sub { ... },
    on do_doze => sub { ... };
 
-=item C<xdefault> STRING, [DEFAULT_STRING]
+=item C<xdefault> SCALAR, [DEFAULT_STRING]
+
+Note: SCALAR must be an actual value (string, e.g.) or C<undef>. 
 
 Provides a shortcut for the common situation where one static value really
 define the case key. Used idiomatically without the explicit return provided
