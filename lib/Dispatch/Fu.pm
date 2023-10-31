@@ -4,46 +4,63 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION       = q{0.99};
+our $VERSION       = q{1.00};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
 my $DISPATCH_TABLE = {};
 
+# sub for introspection, returns the string names of each case
+# added using the C<on> keyword
+sub cases() {
+    return sort keys %$DISPATCH_TABLE;
+}
+
+sub _reset_default_handler() {
+    $DISPATCH_TABLE = {
+        default => sub {
+            warn qq{Supported cases are:\n};
+            foreach my $case (cases) {
+                print qq{\t$case\n};
+            };
+        },
+    };
+    return;
+}
+
+_reset_default_handler;
+
 sub dispatch (&@) {
     my $code_ref  = shift;    # catch sub ref that was coerced from the 'dispatch' BLOCK
     my $match_ref = shift;    # catch the input reference passed after the 'dispatch' BLOCK
-
+    
     # build up dispatch table for each k/v pair preceded by 'on'
     while ( my $key = shift @_ ) {
         my $HV = shift @_;
         $DISPATCH_TABLE->{$key} = _to_sub($HV);
     }
-
+    
     # call $code_ref that needs to return a valid bucket name
     my $key = $code_ref->($match_ref);
-
-    die qq{Computed static bucket not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};
-
+    
+    die qq{Computed static bucket "$key" not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};
+    
     # call subroutine ref defined as the v in the k/v $DISPATCH_TABLE->{$key} slot
     my $sub_to_call = $DISPATCH_TABLE->{$key};
-
-    # reset table
-    $DISPATCH_TABLE = {};
-
+    
     # dispatch with $match_ref
-    $sub_to_call->($match_ref);
+    my $retval = $sub_to_call->($match_ref);
+    
+    # reset table, happens after call to CODE ref so that C<cases> is available inside
+    # of the body of the sub
+    _reset_default_handler;
+    
+    return $retval;
 }
 
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
     return @_;
-}
-
-# sub for introspection, returns the string names of each case
-# added using the C<on> keyword
-sub cases () {
-    return keys %$DISPATCH_TABLE;
 }
 
 # if $case is in cases(), return $case; otherwise return $default
@@ -223,7 +240,8 @@ will be thrown via C<die>.
 
 This routine is for introspection inside of the C<dispatch> BLOCK. It returns
 the list of all cases added by the C<on> routine. Outside of the C<dispatch>
-BLOCK, it returns an empty C<HASH> reference.
+BLOCK, it returns an empty C<HASH> reference. It is available within the C<CODE>
+body of each case handler registered via `on`.
 
 B<Note:> do not rely on the ordering of these cases to be consistent; it relies
 on the C<keys> keyword, which operates on C<HASH>es and key order is therefore

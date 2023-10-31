@@ -11,7 +11,7 @@ sub _runner {
 
         # checking internal inspection routine, cases
         my @cases = cases;
-        is 6, @cases, q{found expected number of cases};
+        is 7, @cases, q{found expected number of cases};
 
         return ( scalar @$input_ref > 5 )
           ? q{case5}
@@ -26,7 +26,7 @@ sub _runner {
       on case5 => sub { return qq{5} };
 
       my @cases = cases;
-      is 0, @cases, q{found expected number of cases};
+      is 1, @cases, q{found expected number of cases};
 
     return $ouput;
 }
