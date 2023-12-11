@@ -58,3 +58,9 @@ Revision history for Dispatch::Fu.
 0.99 Sat Sep 30 20:05:09 2023
      - fixed xdefault to allow for the first parameter to
        to be C<undef>
+
+1.00 Mon Dec 11 20:05:09 2023
+     - fixed a bug revealed when running C<dispatch> in a loop
+       on 5.36.0 ( 4.19.0-25-amd64 #1 SMP Debian 4.19.289-1
+       (2023-07-24)) during testing of code presented in a Perl
+       Advent article; thanks Olaf!
