@@ -91,12 +91,12 @@ Dispatch::Fu - Converts any complicated conditional dispatch situation into fami
 
   my $INPUT = [qw/1 2 3 4 5/];
 
-  my $results = dispatch {                       # <~ start of 'dispatch' construct
-      my $input_ref = shift;                     # <~ input reference
-      return ( scalar @$input_ref > 5 )          # <~ return a string that must be
-       ? q{case5}                                #    defined below using the 'on'
-       : sprintf qq{case%d}, scalar @$input_ref; #    keyword, this i
-  } $INPUT,                                      # <~ input reference, SCALAR passed to dispatch BLOCK
+  my $results = dispatch {                                      # <~ start of 'dispatch' construct
+      my $input_ref = shift;                                    # <~ input reference
+      return ( scalar @$input_ref > 5 )                         # <~ return a string that must be
+       ? q{case5}                                               # <~ defined below using the 'on'
+       : sprintf qq{case%d}, scalar @$input_ref;                # <~ dynamic dispatch here
+  } $INPUT,                                                     # <~ input reference, SCALAR passed to dispatch BLOCK
     on case0 => sub { my $INPUT = shift; return qq{case 0}},    # <~ if dispatch returns 'case0', run this CODE
     on case1 => sub { my $INPUT = shift; return qq{case 1}} ,   # <~ if dispatch returns 'case1', run this CODE
     on case2 => sub { my $INPUT = shift; return qq{case 2}},    #    ...   ...   ...   ...   ...   ...   ...
