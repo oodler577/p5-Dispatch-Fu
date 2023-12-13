@@ -34,6 +34,12 @@ sub dispatch (&@) {
     my $code_ref  = shift;    # catch sub ref that was coerced from the 'dispatch' BLOCK
     my $match_ref = shift;    # catch the input reference passed after the 'dispatch' BLOCK
     
+    # build up dispatch table for each k/v pair preceded by 'on'
+    while ( my $key = shift @_ ) {
+        my $HV = shift @_;
+        $DISPATCH_TABLE->{$key} = _to_sub($HV);
+    }
+    
     # call $code_ref that needs to return a valid bucket name
     my $key = $code_ref->($match_ref);
     
@@ -54,8 +60,6 @@ sub dispatch (&@) {
 
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
-    my ($key, $HV) = @_;
-    $DISPATCH_TABLE->{$key} = _to_sub($HV);
     return @_;
 }
 
