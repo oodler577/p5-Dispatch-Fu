@@ -3,8 +3,9 @@ package Dispatch::Fu;
 use strict;
 use warnings;
 use Exporter qw/import/;
+use Carp qw/carp croak/;
 
-our $VERSION       = q{1.01};
+our $VERSION       = q{1.02};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
@@ -19,7 +20,7 @@ sub cases() {
 sub _reset_default_handler() {
     $DISPATCH_TABLE = {
         default => sub {
-            warn qq{Supported cases are:\n};
+            carp qq{Supported cases are:\n};
             foreach my $case (cases) {
                 print qq{\t$case\n};
             };
@@ -39,11 +40,13 @@ sub dispatch (&@) {
         my $HV = shift @_;
         $DISPATCH_TABLE->{$key} = _to_sub($HV);
     }
+
+    croak qq{Dispatch::Fu [warning]: no cases defined. Make sure no semicolons are in places that need commas!} if not %$DISPATCH_TABLE;
     
     # call $code_ref that needs to return a valid bucket name
     my $key = $code_ref->($match_ref);
     
-    die qq{Computed static bucket "$key" not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};
+    croak qq{Computed static bucket "$key" not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};
     
     # call subroutine ref defined as the v in the k/v $DISPATCH_TABLE->{$key} slot
     my $sub_to_call = $DISPATCH_TABLE->{$key};
@@ -61,11 +64,8 @@ sub dispatch (&@) {
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
     my ($key, $val) = @_;
-    if (not defined $context) {
-      warn <<EOF;
-Warning: "on $key" used in void context is always a mistake. The "on" method always follows a comma!
-EOF
-    }
+    # detect situations like when instead of a comma, "on" sits behind a semicolon
+    carp qq{Dispatch::Fu [warning]: "on $key" used in void context is always a mistake. The "on" method always follows a comma!} unless wantarray;
     return @_;
 }
 
@@ -377,6 +377,38 @@ as input.
      my $INPUT = shift;
      do_key2(qw/some other inputs entirely/);
    };
+
+=head3 Diagnostics and Warnings
+
+This method must always follow a comma since. This means that a C<wantarray>
+check inside is able to warn when it's being used in a useless C<void> or
+C<scalar> contexts. Experience has show that it's easy for a semicolon to sneak
+into a series of C<on> statements as they are added or reorganized. For example,
+how quickly can you spot a the misplaced semicolon below:
+
+  my $results = dispatch {
+    ...                    # <~ compute $key (yada yada)
+  } $INPUT,
+   on case01 => sub { my $INPUT = shift; ... },
+   on case02 => sub { my $INPUT = shift; ... },
+   on case03 => sub { my $INPUT = shift; ... },
+   on case04 => sub { my $INPUT = shift; ... },
+   on case05 => sub { my $INPUT = shift; ... },
+   on case06 => sub { my $INPUT = shift; ... };
+   on case07 => sub { my $INPUT = shift; ... },
+   on case08 => sub { my $INPUT = shift; ... },
+   on case09 => sub { my $INPUT = shift; ... },
+   on case10 => sub { my $INPUT = shift; ... },
+   on case11 => sub { my $INPUT = shift; ... },
+   on case12 => sub { my $INPUT = shift; ... },
+   on case13 => sub { my $INPUT = shift; ... },
+   on case14 => sub { my $INPUT = shift; ... },
+   on case15 => sub { my $INPUT = shift; ... },
+   on case16 => sub { my $INPUT = shift; ... },
+   on case17 => sub { my $INPUT = shift; ... },
+   on case18 => sub { my $INPUT = shift; ... },
+   on case19 => sub { my $INPUT = shift; ... },
+   on case20 => sub { my $INPUT = shift; ... };
 
 =back
 

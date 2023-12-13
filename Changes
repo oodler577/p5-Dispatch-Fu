@@ -59,10 +59,16 @@ Revision history for Dispatch::Fu.
      - fixed xdefault to allow for the first parameter to
        to be C<undef>
 
-1.00 Wed Dec 12 20:00:00 2023
+1.00 Tues Dec 12 20:00:00 2023
      - changes reverted but published
      - replaced with 1.1
 
-1.01 Wed Dec 12 20:00:01 2023
+1.01 Tues Dec 12 20:00:01 2023
      - adding a C<warn> when C<on> is used in the void context,
        which could become a more common error (thanks to tonycoz)
+
+1.02 Wed Dec 12 00:10:02 2023
+     - added proper warnings using "Carp" module; updated POD
+     - added "croak" if no cases are defined or unhandles cases are called
+     - public thank you to tonycoz for the suggestion to add
+       a warn when "on" is used in void or scalar context
