@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw/import/;
 
-our $VERSION       = q{1.00};
+our $VERSION       = q{1.01};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
@@ -60,6 +60,13 @@ sub dispatch (&@) {
 
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
+    my ($key, $val) = @_;
+    my $context = wantarray;
+    if (not defined $context) {
+      warn <<EOF;
+Warning: "on $key" used in void context is always a mistake. The "on" method always follows a comma!
+EOF
+    }
     return @_;
 }
 

@@ -58,3 +58,11 @@ Revision history for Dispatch::Fu.
 0.99 Sat Sep 30 20:05:09 2023
      - fixed xdefault to allow for the first parameter to
        to be C<undef>
+
+1.00 Wed Dec 12 20:00:00 2023
+     - changes reverted but published
+     - replaced with 1.1
+
+1.01 Wed Dec 12 20:00:01 2023
+     - adding a C<warn> when C<on> is used in the void context,
+       which could become a more common error
