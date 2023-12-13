@@ -61,7 +61,6 @@ sub dispatch (&@) {
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
 sub on (@) {
     my ($key, $val) = @_;
-    my $context = wantarray;
     if (not defined $context) {
       warn <<EOF;
 Warning: "on $key" used in void context is always a mistake. The "on" method always follows a comma!
@@ -109,7 +108,7 @@ Dispatch::Fu - Converts any complicated conditional dispatch situation into fami
        : sprintf qq{case%d}, scalar @$input_ref;                # <~ dynamic dispatch here
   } $INPUT,                                                     # <~ input reference, SCALAR passed to dispatch BLOCK
     on case0 => sub { my $INPUT = shift; return qq{case 0}},    # <~ if dispatch returns 'case0', run this CODE
-    on case1 => sub { my $INPUT = shift; return qq{case 1}} ,   # <~ if dispatch returns 'case1', run this CODE
+    on case1 => sub { my $INPUT = shift; return qq{case 1}},    # <~ if dispatch returns 'case1', run this CODE
     on case2 => sub { my $INPUT = shift; return qq{case 2}},    #    ...   ...   ...   ...   ...   ...   ...
     on case3 => sub { my $INPUT = shift; return qq{case 3}},    # ...   ...   ...   ...   ...   ...   ...   ...
     on case4 => sub { my $INPUT = shift; return qq{case 4}},    #    ...   ...   ...   ...   ...   ...   ...
