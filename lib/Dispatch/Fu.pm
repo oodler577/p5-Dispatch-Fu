@@ -5,7 +5,7 @@ use warnings;
 use Exporter qw/import/;
 use Carp qw/carp croak/;
 
-our $VERSION       = q{1.02};
+our $VERSION       = q{1.03};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
@@ -378,16 +378,21 @@ as input.
      do_key2(qw/some other inputs entirely/);
    };
 
+=back
+
 =head3 Diagnostics and Warnings
 
-This method must always follow a comma since. This means that a C<wantarray>
-check inside is able to warn when it's being used in a useless C<void> or
-C<scalar> contexts. Experience has show that it's easy for a semicolon to sneak
-into a series of C<on> statements as they are added or reorganized. For example,
-how quickly can you spot a the misplaced semicolon below:
+The C<on> method must always follow a comma! Commas and semicolons look a
+lot alike. This is why a C<wantarray> check inside is able to warn when it's
+being used in a useless C<void> or C<scalar> contexts. Experience has show
+that it's easy for a semicolon to sneak into a series of C<on> statements
+as they are added or reorganized. For example, how quickly can you spot a
+the misplaced semicolon below:
 
   my $results = dispatch {
-    ...                    # <~ compute $key (yada yada)
+    my $input_ref = shift;
+    ...
+    return $key;
   } $INPUT,
    on case01 => sub { my $INPUT = shift; ... },
    on case02 => sub { my $INPUT = shift; ... },
@@ -409,8 +414,6 @@ how quickly can you spot a the misplaced semicolon below:
    on case18 => sub { my $INPUT = shift; ... },
    on case19 => sub { my $INPUT = shift; ... },
    on case20 => sub { my $INPUT = shift; ... };
-
-=back
 
 =head1 BUGS
 
