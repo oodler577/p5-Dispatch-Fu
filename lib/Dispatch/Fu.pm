@@ -5,7 +5,7 @@ use warnings;
 use Exporter qw/import/;
 use Carp qw/carp croak/;
 
-our $VERSION       = q{1.03};
+our $VERSION       = q{1.04};
 our @EXPORT        = qw(dispatch on cases xdefault);
 our @EXPORT_OK     = qw(dispatch on cases xdefault);
 
@@ -34,31 +34,28 @@ _reset_default_handler;
 sub dispatch (&@) {
     my $code_ref  = shift;    # catch sub ref that was coerced from the 'dispatch' BLOCK
     my $match_ref = shift;    # catch the input reference passed after the 'dispatch' BLOCK
-    
+
     # build up dispatch table for each k/v pair preceded by 'on'
     while ( my $key = shift @_ ) {
         my $HV = shift @_;
         $DISPATCH_TABLE->{$key} = _to_sub($HV);
     }
 
-    croak qq{Dispatch::Fu [warning]: no cases defined. Make sure no semicolons are in places that need commas!} if not %$DISPATCH_TABLE;
-    
+    croak qq{Dispatch::Fu [warning]: no cases defined. Make sure no semicolons are in places that need commas!} if not %$DISPATCH_TABLE;                                                                
+
     # call $code_ref that needs to return a valid bucket name
     my $key = $code_ref->($match_ref);
-    
-    croak qq{Computed static bucket "$key" not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};
-    
+
+    croak qq{Computed static bucket "$key" not found\n} if not $DISPATCH_TABLE->{$key} or 'CODE' ne ref $DISPATCH_TABLE->{$key};                                                                        
+
     # call subroutine ref defined as the v in the k/v $DISPATCH_TABLE->{$key} slot
     my $sub_to_call = $DISPATCH_TABLE->{$key};
-    
-    # dispatch with $match_ref
-    my $retval = $sub_to_call->($match_ref);
-    
+
     # reset table, happens after call to CODE ref so that C<cases> is available inside
     # of the body of the sub
     _reset_default_handler;
-    
-    return $retval;
+
+    return $sub_to_call->($match_ref);
 }
 
 # on accumulater, wants h => v pair, where h is a static bucket string and v is a sub ref
@@ -241,6 +238,23 @@ point of entry for input.
 The C<dispatch> implementation must return a static string, and that string
 should be one of the keys added using the C<on> keyword. Otherwise, an exception
 will be thrown via C<die>.
+
+Note: C<dispatch> faithfully returns whatever the dispatched C<subroutine> is
+written to return; including a single value C<SCALAR>, C<SCALAR> refernce,
+C<LIST>, etc.
+
+  my @results = dispatch {
+    my $input_ref = shift; # <~ there is only one parameter, but can a reference to anything
+    my $key = q{default};  # <~ initiate the default key to use, 'default' by convention not required
+    ...                    # <~ compute $key (yada yada)
+    return $key;           # <~ key must be limited to the set of keys added with C<on>
+  }
+  ...
+  on default => sub { return qw/1 2 3 4 5 6 7 8 9 10/ },
+  ...
+
+If the C<default> case is the one dispatched, then C<@results> will contain
+the digits C<1 .. 10> returned as a LIST via C<qw//>, above.
 
 =item C<cases>
 
