@@ -1,7 +1,7 @@
 # Dispatch::Fu
 
 `Dispatch::Fu` is a small, production-worthy Perl module intended for production use. It turns arbitrary
-input into a static dispatch key and then using that key to select a handler
+input into a static dispatch key and then uses that key to select a handler
 from a hash-based dispatch table.
 
 It is intended for situations where ordinary hash dispatch is attractive, but
@@ -92,7 +92,9 @@ $value,
 ## Defaults and introspection
 
 `xdefault` is a shortcut for the common case where an input value should be
-used directly when it names a registered case:
+used directly when it exactly names a registered case. Matching is literal,
+not substring or regular-expression matching, and false-but-defined keys such
+as `"0"` are valid:
 
 ```perl
 my $result = dispatch {
@@ -104,9 +106,61 @@ $action,
   on stop    => sub { ... };
 ```
 
-`cases` returns the currently registered case names and can be used while
-computing a dispatch key when application logic needs to inspect the available
-choices.
+`cases` returns the currently registered case names in sorted order. During
+the classification block it includes the cases registered with `on` plus the
+built-in `default` case. The table is reset before the selected handler runs,
+so outside the classification block `cases` reflects only the built-in
+`default` case. This keeps dispatch calls isolated from one another.
+
+## CGI::Tiny example
+
+A small CGI application is a natural fit when the action depends on more than
+one request value. Here the dispatch key is derived from both the HTTP method
+and request path, while the selected handler receives the original
+`CGI::Tiny` object:
+
+```perl
+use strict;
+use warnings;
+use CGI::Tiny;
+use Dispatch::Fu;
+
+cgi {
+    my $cgi = $_;
+
+    dispatch {
+        my $cgi = shift;
+        my $method = $cgi->method;
+        my $path   = $cgi->path;
+
+        return q{home}
+          if $method eq q{GET} and $path eq q{/};
+
+        return q{create_item}
+          if $method eq q{POST} and $path eq q{/item};
+
+        return q{not_found};
+    }
+    $cgi,
+      on home => sub {
+          my $cgi = shift;
+          return $cgi->render(html => q{<h1>Home</h1>});
+      },
+      on create_item => sub {
+          my $cgi = shift;
+          my $name = $cgi->param(q{name});
+          return $cgi->render(text => qq{created: $name});
+      },
+      on not_found => sub {
+          my $cgi = shift;
+          $cgi->set_response_status(404);
+          return $cgi->render(text => q{Not Found});
+      };
+};
+```
+
+This is useful for modest CGI programs with a small static set of actions; it
+is not intended to replace a full routing framework.
 
 ## Reference unpacking
 
