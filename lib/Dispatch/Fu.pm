@@ -5,7 +5,7 @@ use warnings;
 use Exporter qw/import/;
 use Carp qw/carp croak/;
 
-our $VERSION       = q{1.06};
+our $VERSION       = q{1.07};
 our @EXPORT        = qw(dispatch on cases xdefault xshift_and_deref);
 our @EXPORT_OK     = qw(dispatch on cases xdefault xshift_and_deref);
 
